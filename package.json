@@ -1,6 +1,6 @@
 {
-  "name": "secret_dashboard",
-  "description": "An entry point for new users into Secret Network",
+  "name": "secret_restake",
+  "description": "Secret Restaker",
   "version": "1.0.0",
   "scripts": {
     "start": "vite --host",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@babel/core": "^7.0.0",
-    "@cosmjs/stargate": "0.26.5",
+    "@cosmjs/stargate": "^0.26.5",
     "@emotion/react": "11.10.5",
     "@emotion/styled": "11.10.5",
     "@fortawesome/fontawesome-free": "^6.2.1",

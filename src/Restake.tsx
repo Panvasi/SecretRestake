@@ -48,10 +48,10 @@ export function Restake() {
       console.log(validators);
       console.log(
         validators
-          ?.sort((a, b) =>
+          ?.sort((a: any, b: any) =>
             a?.description.moniker.localeCompare(b?.description.moniker)
           )
-          .map((item) => {
+          .map((item: any) => {
             return {
               label: item.description.moniker,
               value: item.description.moniker,
@@ -212,10 +212,10 @@ export function Restake() {
             <div className="w-full" id="fromInputWrapper">
               <Select
                 isDisabled={!secretAddress}
-                options={validatorsForDelegator?.validators.map((item) => {
+                options={validatorsForDelegator?.validators.map((item: any) => {
                   return {
                     name: validators.find(
-                      (validator) => validator.operator_address == item
+                      (validator: any) => validator.operator_address == item
                     ).description.moniker,
                     value: item,
                   };
