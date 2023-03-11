@@ -18,7 +18,7 @@ import { SecretjsContextProvider } from "shared/context/SecretjsContext";
 import { Restake } from "Restake";
 
 // for html-head
-export const websiteName = "Secret Dashboard";
+export const websiteName = "Secret Auto-Restake";
 
 globalThis.Buffer = Buffer;
 declare global {
