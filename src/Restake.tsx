@@ -37,6 +37,7 @@ export function Restake() {
 
   const [validators, setValidators] = useState<any>();
   const [validatorsForDelegator, setValidatorsForDelegator] = useState<any>();
+  const [restakeEntries, setRestakeEntries] = useState<any>();
   const [selectedValidator, setSelectedValidator] = useState<any>();
 
   useEffect(() => {
@@ -45,25 +46,17 @@ export function Restake() {
       const { validators } = await secretjs.query.staking.validators({
         status: "BOND_STATUS_BONDED",
       });
-      console.log(validators);
-      console.log(
-        validators
-          ?.sort((a: any, b: any) =>
-            a?.description.moniker.localeCompare(b?.description.moniker)
-          )
-          .map((item: any) => {
-            return {
-              label: item.description.moniker,
-              value: item.description.moniker,
-            };
-          })
-      );
       setValidators(validators);
       const validatorsForDelegator =
         await secretjs.query.distribution.delegatorValidators({
           delegator_address: secretAddress,
         });
       setValidatorsForDelegator(validatorsForDelegator);
+      const restakeEntries = await secretjs.query.distribution.restakeEntries({
+        delegator_address: secretAddress,
+      });
+      console.log(restakeEntries);
+      setRestakeEntries(restakeEntries);
     };
     fetchData();
   }, [secretAddress, secretjs]);
@@ -71,6 +64,11 @@ export function Restake() {
   useEffect(() => {
     if (!secretjs || !secretAddress) return;
     console.log(selectedValidator);
+    console.log(
+      restakeEntries?.find(
+        (validator: any) => validator == selectedValidator.value
+      )
+    );
   }, [selectedValidator]);
 
   function SubmitButton(props: { disabled: boolean; enableRestake: boolean }) {
@@ -158,6 +156,7 @@ export function Restake() {
             {secretAddress && secretjs && checked === false && (
               <>{`Disable Auto-restake`}</>
             )}
+            {!secretAddress && !secretjs && <>{`Auto-restake`}</>}
           </button>
         </div>
       </>
@@ -249,7 +248,7 @@ export function Restake() {
           {/* Submit Button */}
           <SubmitButton
             disabled={!secretjs || !secretAddress}
-            enableRestake={true}
+            enableRestake={checked}
           />
         </div>
       </div>

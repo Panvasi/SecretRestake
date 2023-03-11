@@ -1,6 +1,6 @@
 ![Secret Network Banner](banner.png)
 
-# Secret Auto-Restaker
+# Secret Auto-Restake
 
 Secret-Auto restaker enables you to easily add
 
