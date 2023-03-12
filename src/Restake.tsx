@@ -1,6 +1,11 @@
 import { useEffect, useState, useContext, createContext } from "react";
 import { MsgSetAutoRestake } from "secretjs";
-import { sleep, faucetURL, faucetAddress } from "shared/utils/commons";
+import {
+  sleep,
+  faucetURL,
+  faucetAddress,
+  SECRET_LCD,
+} from "shared/utils/commons";
 import BigNumber from "bignumber.js";
 import { toast } from "react-toastify";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -15,16 +20,9 @@ import {
 import { Link } from "react-router-dom";
 import Select from "react-select";
 import Tooltip from "@mui/material/Tooltip";
-import Table from "@mui/material/Table";
 import { Helmet } from "react-helmet-async";
 import { websiteName } from "App";
-import {
-  getKeplrViewingKey,
-  SecretjsContext,
-  setKeplrViewingKey,
-} from "shared/context/SecretjsContext";
-
-export const WrapContext = createContext(null);
+import { SecretjsContext } from "shared/context/SecretjsContext";
 
 export function Restake() {
   const queryParams = new URLSearchParams(window.location.search);
@@ -32,8 +30,7 @@ export function Restake() {
   const { secretjs, secretAddress, connectWallet } =
     useContext(SecretjsContext);
 
-  // UI
-  const [isValidAmount, setisValidAmount] = useState<boolean>(false);
+  const [isRestakeEnabled, setIsRestakeEnabled] = useState(false);
 
   const [validators, setValidators] = useState<any>();
   const [validatorsForDelegator, setValidatorsForDelegator] = useState<any>();
@@ -48,27 +45,29 @@ export function Restake() {
       });
       setValidators(validators);
       const validatorsForDelegator =
-        await secretjs.query.distribution.delegatorValidators({
-          delegator_address: secretAddress,
+        await secretjs.query.staking.delegatorDelegations({
+          delegator_addr: secretAddress,
         });
       setValidatorsForDelegator(validatorsForDelegator);
-      const restakeEntries = await secretjs.query.distribution.restakeEntries({
-        delegator_address: secretAddress,
-      });
-      console.log(restakeEntries);
-      setRestakeEntries(restakeEntries);
+      console.log(validatorsForDelegator);
     };
     fetchData();
+    const url = `${SECRET_LCD}/cosmos/distribution/v1beta1/restake_entries?delegator=${secretAddress}`;
+    fetch(url)
+      .then((response) => response.json())
+      .then((response) => {
+        console.log(response);
+        setRestakeEntries(response);
+      });
   }, [secretAddress, secretjs]);
 
   useEffect(() => {
     if (!secretjs || !secretAddress) return;
     console.log(selectedValidator);
-    console.log(
-      restakeEntries?.find(
-        (validator: any) => validator == selectedValidator.value
-      )
+    const isRestakeActive = restakeEntries?.validators.find(
+      (validator: any) => validator == selectedValidator.value
     );
+    setIsRestakeEnabled(isRestakeActive === selectedValidator.value);
   }, [selectedValidator]);
 
   function SubmitButton(props: { disabled: boolean; enableRestake: boolean }) {
@@ -89,11 +88,11 @@ export function Restake() {
               new MsgSetAutoRestake({
                 delegator_address: secretAddress,
                 validator_address: selectedValidator.value,
-                enabled: checked,
+                enabled: !isRestakeEnabled,
               } as any),
             ],
             {
-              gasLimit: 150_000,
+              gasLimit: 100_000,
               gasPriceInFeeDenom: 0.25,
               feeDenom: "uscrt",
             }
@@ -150,24 +149,18 @@ export function Restake() {
             disabled={disabled}
             onClick={() => submit()}
           >
-            {secretAddress && secretjs && checked === true && (
-              <>{`Enable Auto-restake`}</>
+            {secretAddress && secretjs && isRestakeEnabled === false && (
+              <>{`Enable auto-restake`}</>
             )}
-            {secretAddress && secretjs && checked === false && (
-              <>{`Disable Auto-restake`}</>
+            {secretAddress && secretjs && isRestakeEnabled === true && (
+              <>{`Disable auto-restake`}</>
             )}
-            {!secretAddress && !secretjs && <>{`Auto-restake`}</>}
+            {!secretAddress && !secretjs && <>{`Connect wallet`}</>}
           </button>
         </div>
       </>
     );
   }
-
-  const [checked, setChecked] = useState(false);
-
-  const handleChange = () => {
-    setChecked(!checked);
-  };
 
   const handleClick = () => {
     if (!secretAddress || !secretjs) {
@@ -178,7 +171,7 @@ export function Restake() {
   return (
     <>
       <Helmet>
-        <title>Secret auto-restake</title>
+        <title>Secret Auto-Restake</title>
       </Helmet>
 
       <div className="w-full max-w-xl mx-auto px-4 onEnter_fadeInDown relative">
@@ -203,7 +196,7 @@ export function Restake() {
             {/* Title Bar */}
             <div className="flex flex-col sm:flex-row">
               <div className="flex-1 font-semibold mb-2 text-center sm:text-left">
-                Your Validators
+                Your active delegations
               </div>
             </div>
 
@@ -211,44 +204,75 @@ export function Restake() {
             <div className="w-full" id="fromInputWrapper">
               <Select
                 isDisabled={!secretAddress}
-                options={validatorsForDelegator?.validators.map((item: any) => {
-                  return {
-                    name: validators.find(
-                      (validator: any) => validator.operator_address == item
-                    ).description.moniker,
-                    value: item,
-                  };
-                })}
+                options={validatorsForDelegator?.delegation_responses.map(
+                  (item: any) => {
+                    return {
+                      name: `${
+                        validators?.find(
+                          (validator: any) =>
+                            validator.operator_address ==
+                            item?.delegation?.validator_address
+                        )?.description?.moniker
+                      }: ${item.balance.amount * 1e-6} SCRT`,
+                      value: item?.delegation?.validator_address,
+                      balance: item.balance.amount,
+                    };
+                  }
+                )}
                 value={selectedValidator}
                 onChange={setSelectedValidator}
                 isSearchable={false}
-                formatOptionLabel={(validator) => (
-                  <div className="flex items-center">
-                    <span className="font-semibold text-base">
-                      {validator.name}
-                    </span>
-                  </div>
-                )}
+                isOptionDisabled={(validator) => {
+                  return validator.balance < 1000000;
+                }}
+                formatOptionLabel={(validator) => {
+                  return (
+                    <div className="flex items-center">
+                      <span className="font-semibold text-base">
+                        {validator.balance > 1000000
+                          ? validator.name
+                          : `${validator.name} (below threshold)`}
+                      </span>
+                    </div>
+                  );
+                }}
                 className="react-select-wrap-container"
                 classNamePrefix="react-select-wrap"
               />
             </div>
-            <div className="flex mt-4">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={handleChange}
-                />
-                Auto-restake
-              </label>
+            <div className="flex mt-4 center">
+              {secretAddress && secretjs && selectedValidator ? (
+                isRestakeEnabled ? (
+                  <label>
+                    Auto-restaking <b>is enabled</b> for validator{" "}
+                    {
+                      validators?.find(
+                        (validator: any) =>
+                          validator.operator_address == selectedValidator?.value
+                      )?.description?.moniker
+                    }
+                  </label>
+                ) : (
+                  <label>
+                    Auto-restaking <b>is NOT enabled</b> for validator{" "}
+                    {
+                      validators?.find(
+                        (validator: any) =>
+                          validator.operator_address == selectedValidator?.value
+                      )?.description?.moniker
+                    }
+                  </label>
+                )
+              ) : (
+                <label></label>
+              )}
             </div>
           </div>
 
           {/* Submit Button */}
           <SubmitButton
             disabled={!secretjs || !secretAddress}
-            enableRestake={checked}
+            enableRestake={isRestakeEnabled}
           />
         </div>
       </div>
