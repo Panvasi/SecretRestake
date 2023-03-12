@@ -1,8 +1,6 @@
-![Secret Network Banner](banner.png)
-
 # Secret Auto-Restake
 
-Secret-Auto restaker enables you to easily add
+Secret-Auto restaker enables you to easily enable auto-restake for you delegations.
 
 ## Prerequisites
 
