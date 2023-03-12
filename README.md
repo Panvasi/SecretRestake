@@ -1,6 +1,6 @@
 # Secret Auto-Restake
 
-Secret-Auto restaker enables you to easily enable auto-restake for you delegations.
+Secret-Auto restaker enables you to easily enable auto-restake your delegations.
 
 ## Prerequisites
 
