@@ -18,11 +18,11 @@ class Footer extends React.Component {
           <div className="col-span-12 text-sm font-medium text-neutral-600 dark:text-neutral-400">
             ⚡️ Powered by{" "}
             <a
-              href="https://secretsaturn.net/"
+              href="https://www.apeironnodes.com/"
               target="_blank"
               className="transition-colors hover:text-black dark:hover:text-white"
             >
-              🪐 𝕊ecret 𝕊aturn
+              ApeironNodesDAO🔗
             </a>
           </div>
           <div className="col-span-12 space-x-4 text-xl text-center">
