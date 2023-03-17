@@ -85,7 +85,9 @@ export default function App() {
       <Helmet>
         <title>{websiteName}</title>
       </Helmet>
-      <Restake></Restake>
+      <Routes>
+        <Route path="/" element={<Restake />} />
+      </Routes>
     </>
   );
 }

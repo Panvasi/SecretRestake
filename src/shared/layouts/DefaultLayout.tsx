@@ -51,21 +51,10 @@ export const DefaultLayout = ({ children }: any) => {
 
       <div className="flex">
         {/* Menu */}
-        <aside
-          className={
-            (showMobileMenu
-              ? "z-50 left-0 right-0 w-full lg:w-auto min-h-screen bg-white dark:bg-neutral-900"
-              : "hidden lg:block") +
-            " " +
-            "lg:w-[17rem] fixed left-0 top-0 h-screen p-6 overflow-x-hidden"
-          }
-        ></aside>
         <main className="flex flex-col min-h-screen flex-1 lg:ml-[17rem]">
           <div className="flex-1">
             {/* Top Bar [Burger Menu | Socials | Keplr] */}
             <div className="flex items-center gap-4 p-4">
-              {/* Burger Menu */}
-
               <div className="flex-initial sm:flex-1 text-right space-x-2">
                 <ThemeSwitch />
               </div>

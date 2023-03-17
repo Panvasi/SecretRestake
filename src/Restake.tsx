@@ -8,6 +8,7 @@ import {
 } from "shared/utils/commons";
 import BigNumber from "bignumber.js";
 import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faKey,
@@ -30,6 +31,8 @@ export function Restake() {
   const { secretjs, secretAddress, connectWallet } =
     useContext(SecretjsContext);
 
+  const restakeThreshold = 10000000;
+
   const [isRestakeEnabled, setIsRestakeEnabled] = useState(false);
 
   const [validators, setValidators] = useState<any>();
@@ -38,7 +41,12 @@ export function Restake() {
   const [selectedValidator, setSelectedValidator] = useState<any>();
 
   useEffect(() => {
-    if (!secretjs || !secretAddress) return;
+    if (!secretjs || !secretAddress) {
+      setValidators(undefined);
+      setValidatorsForDelegator(undefined);
+      setRestakeEntries(undefined);
+      return;
+    }
     const fetchData = async () => {
       const { validators } = await secretjs.query.staking.validators({
         status: "BOND_STATUS_BONDED",
@@ -64,10 +72,11 @@ export function Restake() {
   useEffect(() => {
     if (!secretjs || !secretAddress) return;
     console.log(selectedValidator);
-    const isRestakeActive = restakeEntries?.validators.find(
-      (validator: any) => validator == selectedValidator.value
-    );
-    setIsRestakeEnabled(isRestakeActive === selectedValidator.value);
+    const isRestakeActive =
+      restakeEntries?.validators.find(
+        (validator: any) => validator == selectedValidator.value
+      ) === selectedValidator.value;
+    setIsRestakeEnabled(isRestakeActive);
   }, [selectedValidator]);
 
   function SubmitButton(props: { disabled: boolean; enableRestake: boolean }) {
@@ -120,7 +129,7 @@ export function Restake() {
             if (tx) {
               if (tx.code === 0) {
                 toast.update(toastId, {
-                  render: `Changing restaking successfully`,
+                  render: `Changed restaking successfully`,
                   type: "success",
                   isLoading: false,
                   closeOnClick: true,
@@ -189,6 +198,17 @@ export function Restake() {
             <h1 className="inline text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 to-purple-500">
               Auto-Restake enabler
             </h1>
+            <Tooltip
+              title={
+                "Use the auto-restake feature to automatically claim and restake your staked SCRT."
+              }
+              placement="right"
+              arrow
+            >
+              <span className="ml-2 mt-1 text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors cursor-pointer">
+                <FontAwesomeIcon icon={faInfoCircle} />
+              </span>
+            </Tooltip>
           </div>
 
           {/* *** From *** */}
@@ -203,7 +223,7 @@ export function Restake() {
             {/* Input Field */}
             <div className="w-full" id="fromInputWrapper">
               <Select
-                isDisabled={!secretAddress}
+                isDisabled={!secretjs || !secretAddress}
                 options={validatorsForDelegator?.delegation_responses.map(
                   (item: any) => {
                     return {
@@ -213,7 +233,14 @@ export function Restake() {
                             validator.operator_address ==
                             item?.delegation?.validator_address
                         )?.description?.moniker
-                      }: ${item.balance.amount * 1e-6} SCRT`,
+                      } (${(item.balance.amount * 1e-6).toFixed(1)} SCRT): ${
+                        restakeEntries?.validators.find(
+                          (validator: any) =>
+                            validator == item?.delegation?.validator_address
+                        ) === item?.delegation?.validator_address
+                          ? "Auto-restake enabled ✅"
+                          : "Auto-restake not enabled ❌"
+                      }`,
                       value: item?.delegation?.validator_address,
                       balance: item.balance.amount,
                     };
@@ -223,13 +250,13 @@ export function Restake() {
                 onChange={setSelectedValidator}
                 isSearchable={false}
                 isOptionDisabled={(validator) => {
-                  return validator.balance < 1000000;
+                  return validator.balance < restakeThreshold;
                 }}
                 formatOptionLabel={(validator) => {
                   return (
                     <div className="flex items-center">
                       <span className="font-semibold text-base">
-                        {validator.balance > 1000000
+                        {validator.balance >= restakeThreshold
                           ? validator.name
                           : `${validator.name} (below threshold)`}
                       </span>
@@ -244,7 +271,7 @@ export function Restake() {
               {secretAddress && secretjs && selectedValidator ? (
                 isRestakeEnabled ? (
                   <label>
-                    Auto-restaking <b>is enabled</b> for validator{" "}
+                    Auto-restaking <b>is enabled</b> ✅ for validator{" "}
                     {
                       validators?.find(
                         (validator: any) =>
@@ -254,7 +281,7 @@ export function Restake() {
                   </label>
                 ) : (
                   <label>
-                    Auto-restaking <b>is NOT enabled</b> for validator{" "}
+                    Auto-restaking <b>is NOT enabled</b> ❌ for validator{" "}
                     {
                       validators?.find(
                         (validator: any) =>
@@ -268,12 +295,13 @@ export function Restake() {
               )}
             </div>
           </div>
-
-          {/* Submit Button */}
-          <SubmitButton
-            disabled={!secretjs || !secretAddress}
-            enableRestake={isRestakeEnabled}
-          />
+          <div className="mt-4">
+            {/* Submit Button */}
+            <SubmitButton
+              disabled={!secretjs || !secretAddress || !selectedValidator}
+              enableRestake={isRestakeEnabled}
+            />
+          </div>
         </div>
       </div>
     </>
